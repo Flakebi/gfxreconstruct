@@ -96,6 +96,7 @@ const char kPageGuardSignalHandlerWatcherEnvVar[]            = GFXRECON_OPTION_S
 const char kPageGuardSignalHandlerWatcherMaxRestoresEnvVar[] = GFXRECON_OPTION_STR(PAGE_GUARD_SIGNAL_HANDLER_WATCHER_MAX_RESTORES);
 const char kCaptureTriggerEnvVar[]                           = GFXRECON_OPTION_STR(CAPTURE_TRIGGER);
 const char kCaptureTriggerFramesEnvVar[]                     = GFXRECON_OPTION_STR(CAPTURE_TRIGGER_FRAMES);
+const char kCaptureDispatchRaysOnlyEnvVar[]                  = GFXRECON_OPTION_STR(CAPTURE_DISPATCH_RAYS_ONLY);
 const char kCaptureIUnknownWrappingEnvVar[]                  = GFXRECON_OPTION_STR(CAPTURE_IUNKNOWN_WRAPPING);
 const char kCaptureQueueSubmitsEnvVar[]                      = GFXRECON_OPTION_STR(CAPTURE_QUEUE_SUBMITS);
 const char kDebugLayerEnvVar[]                               = GFXRECON_OPTION_STR(DEBUG_LAYER);
@@ -151,6 +152,7 @@ const std::string kOptionKeyCaptureDrawCalls                         = std::stri
 const std::string kOptionKeyQuitAfterCaptureFrames                   = std::string(kSettingsFilter) + std::string(QUIT_AFTER_CAPTURE_FRAMES_LOWER);
 const std::string kOptionKeyCaptureTrigger                           = std::string(kSettingsFilter) + std::string(CAPTURE_TRIGGER_LOWER);
 const std::string kOptionKeyCaptureTriggerFrames                     = std::string(kSettingsFilter) + std::string(CAPTURE_TRIGGER_FRAMES_LOWER);
+const std::string kOptionKeyCaptureDispatchRaysOnly                  = std::string(kSettingsFilter) + std::string(CAPTURE_DISPATCH_RAYS_ONLY_LOWER);
 const std::string kOptionKeyCaptureIUnknownWrapping                  = std::string(kSettingsFilter) + std::string(CAPTURE_IUNKNOWN_WRAPPING_LOWER);
 const std::string kOptionKeyCaptureQueueSubmits                      = std::string(kSettingsFilter) + std::string(CAPTURE_QUEUE_SUBMITS_LOWER);
 const std::string kOptionKeyCaptureUseAssetFile                      = std::string(kSettingsFilter) + std::string(CAPTURE_USE_ASSET_FILE_LOWER);
@@ -312,6 +314,7 @@ void CaptureSettings::LoadOptionsEnvVar(OptionsMap* options, bool load_log_setti
     LoadSingleOptionEnvVar(options, kQuitAfterFramesEnvVar, kOptionKeyQuitAfterCaptureFrames);
     LoadSingleOptionEnvVar(options, kCaptureTriggerEnvVar, kOptionKeyCaptureTrigger);
     LoadSingleOptionEnvVar(options, kCaptureTriggerFramesEnvVar, kOptionKeyCaptureTriggerFrames);
+    LoadSingleOptionEnvVar(options, kCaptureDispatchRaysOnlyEnvVar, kOptionKeyCaptureDispatchRaysOnly);
     LoadSingleOptionEnvVar(options, kCaptureQueueSubmitsEnvVar, kOptionKeyCaptureQueueSubmits);
     LoadSingleOptionEnvVar(options, kCaptureUseAssetFileEnvVar, kOptionKeyCaptureUseAssetFile);
 
@@ -493,6 +496,21 @@ void CaptureSettings::ProcessOptions(OptionsMap* options, CaptureSettings* setti
             GFXRECON_LOG_WARNING(
                 "Settings Loader: Ignoring trim trigger frames setting as trim ranges has been specified.");
         }
+    }
+
+    settings->trace_settings_.capture_dispatch_rays_only =
+        ParseBoolString(FindOption(options, kOptionKeyCaptureDispatchRaysOnly),
+                        settings->trace_settings_.capture_dispatch_rays_only);
+    if (settings->trace_settings_.capture_dispatch_rays_only)
+    {
+        // Reuses the kDrawCalls split-command-list machinery; the hotkey arms a one-shot capture
+        // of a single DispatchRays. The submit/command/draw indices are patched at runtime, so
+        // start with sentinel values that route everything to the "before" split until armed.
+        settings->trace_settings_.trim_boundary                           = TrimBoundary::kDrawCalls;
+        settings->trace_settings_.trim_draw_calls.submit_index            = std::numeric_limits<uint32_t>::max();
+        settings->trace_settings_.trim_draw_calls.command_index           = std::numeric_limits<uint32_t>::max();
+        settings->trace_settings_.trim_draw_calls.draw_call_indices.first = std::numeric_limits<uint32_t>::max();
+        settings->trace_settings_.trim_draw_calls.draw_call_indices.last  = std::numeric_limits<uint32_t>::max();
     }
 
     settings->trace_settings_.quit_after_frame_ranges = ParseBoolString(

@@ -92,6 +92,8 @@ GFXRECON_BEGIN_NAMESPACE(encode)
 #define CAPTURE_TRIGGER_UPPER                                "CAPTURE_TRIGGER"
 #define CAPTURE_TRIGGER_FRAMES_LOWER                         "capture_trigger_frames"
 #define CAPTURE_TRIGGER_FRAMES_UPPER                         "CAPTURE_TRIGGER_FRAMES"
+#define CAPTURE_DISPATCH_RAYS_ONLY_LOWER                     "capture_dispatch_rays_only"
+#define CAPTURE_DISPATCH_RAYS_ONLY_UPPER                     "CAPTURE_DISPATCH_RAYS_ONLY"
 #define CAPTURE_ANDROID_TRIGGER_LOWER                        "capture_android_trigger"
 #define CAPTURE_ANDROID_TRIGGER_UPPER                        "CAPTURE_ANDROID_TRIGGER"
 #define CAPTURE_ANDROID_DUMP_ASSETS_LOWER                    "capture_android_dump_assets"
@@ -231,6 +233,7 @@ class CaptureSettings
         TrimDrawCalls                trim_draw_calls;
         std::string                  trim_key;
         uint32_t                     trim_key_frames{ 0 };
+        bool                         capture_dispatch_rays_only{ false };
         RuntimeTriggerState          runtime_capture_trigger{ kNotUsed };
         std::string                  capture_process_name{ "" };
         bool                         runtime_write_assets{ false };

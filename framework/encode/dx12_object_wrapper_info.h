@@ -523,6 +523,7 @@ struct ID3D12CommandListInfo : public DxWrapperInfo
     uint32_t                                     find_target_draw_call_count{ 0 };
     std::shared_ptr<const ID3D12CommandListInfo> target_bundle_commandlist_info;
     bool                                         is_trim_target{ false };
+    bool                                         is_dispatch_rays_target{ false };
 };
 
 struct ID3D10BlobInfo : public DxWrapperInfo

@@ -452,6 +452,14 @@ class CommonCaptureManager
     {
         return trim_draw_calls_;
     }
+    void SetTrimDrawCalls(const CaptureSettings::TrimDrawCalls& v)
+    {
+        trim_draw_calls_ = v;
+    }
+    bool IsDispatchRaysOnly() const
+    {
+        return dispatch_rays_only_;
+    }
     auto GetQueueSubmitCount() const
     {
         return queue_submit_count_;
@@ -621,6 +629,7 @@ class CommonCaptureManager
     std::string                             trim_key_;
     uint32_t                                trim_key_frames_;
     uint32_t                                trim_key_first_frame_;
+    bool                                    dispatch_rays_only_{ false };
     size_t                                  trim_current_range_;
     uint32_t                                current_frame_;
     uint32_t                                queue_submit_count_;

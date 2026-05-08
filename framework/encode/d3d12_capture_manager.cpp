@@ -3514,6 +3514,28 @@ bool D3D12CaptureManager::TrimDrawCalls_ID3D12CommandQueue_ExecuteCommandLists(
     UINT                                                   num_lists,
     ID3D12CommandList* const*                              lists)
 {
+    // Hotkey-armed DispatchRays capture: if a previously recorded DispatchRays in this
+    // submit was claimed as the target, patch the (so-far sentinel) submit/command index
+    // so the existing kDrawCalls capture path below picks it up.
+    if (common_manager_->IsDispatchRaysOnly())
+    {
+        auto trim_draw_calls = GetTrimDrawCalls();
+        for (UINT i = 0; i < num_lists; ++i)
+        {
+            auto cmd_wrapper = reinterpret_cast<ID3D12CommandList_Wrapper*>(lists[i]);
+            GFXRECON_ASSERT(cmd_wrapper);
+            auto cmd_info = cmd_wrapper->GetObjectInfo();
+            if (cmd_info && cmd_info->is_dispatch_rays_target)
+            {
+                trim_draw_calls.submit_index  = common_manager_->GetQueueSubmitCount();
+                trim_draw_calls.command_index = i;
+                common_manager_->SetTrimDrawCalls(trim_draw_calls);
+                cmd_info->is_dispatch_rays_target = false;
+                break;
+            }
+        }
+    }
+
     auto trim_draw_calls = GetTrimDrawCalls();
 
     if (common_manager_->GetQueueSubmitCount() == trim_draw_calls.submit_index)
@@ -3618,6 +3640,24 @@ bool D3D12CaptureManager::TrimDrawCalls_ID3D12CommandQueue_ExecuteCommandLists(
 
         common_manager_->DeactivateTrimmingDrawCalls(current_lock);
 
+        // Multi-capture support: clear is_trim_target on the captured split so that the
+        // next capture's state recreation does not re-write this split's (possibly stale)
+        // command_data. With dispatch_rays_only_, DeactivateTrimmingDrawCalls keeps the
+        // state tracker alive and we can be re-armed.
+        if (common_manager_->IsDispatchRaysOnly())
+        {
+            auto target_split_wrapper =
+                reinterpret_cast<ID3D12CommandList_Wrapper*>(target_draw_call_cmd.GetInterfacePtr());
+            if (target_split_wrapper)
+            {
+                auto target_split_info = target_split_wrapper->GetObjectInfo();
+                if (target_split_info)
+                {
+                    target_split_info->is_trim_target = false;
+                }
+            }
+        }
+
         // after of splitted and after of lists
         auto after_draw_call_cmd = target_info->split_command_sets[graphics::dx12::kAfterDrawCallArrayIndex].list;
         GFXRECON_ASSERT(after_draw_call_cmd);
@@ -3720,6 +3760,21 @@ D3D12CaptureManager::GetCommandListsForTrimDrawCalls(ID3D12CommandList_Wrapper* 
         default:
             break;
     };
+
+    // Hotkey-held DispatchRays capture: while the hotkey is down, claim the first
+    // DispatchRays of each command list as a capture target. The per-cmdlist
+    // is_dispatch_rays_target flag prevents marking more than one DispatchRays in the
+    // same recording cycle; it is cleared after capture in the ExecuteCommandLists path.
+    if (common_manager_->IsDispatchRaysOnly() &&
+        api_call_id == format::ApiCall_ID3D12GraphicsCommandList4_DispatchRays &&
+        !cmd_list_info->is_dispatch_rays_target && !common_manager_->GetTrimKey().empty() &&
+        common_manager_->GetKeyboard().GetKeyState(common_manager_->GetTrimKey()))
+    {
+        trim_draw_calls.draw_call_indices.first = cmd_list_info->draw_call_count;
+        trim_draw_calls.draw_call_indices.last  = cmd_list_info->draw_call_count;
+        common_manager_->SetTrimDrawCalls(trim_draw_calls);
+        cmd_list_info->is_dispatch_rays_target = true;
+    }
 
     graphics::dx12::Dx12DumpResourcePos split_type = graphics::dx12::Dx12DumpResourcePos::kDrawCall;
 

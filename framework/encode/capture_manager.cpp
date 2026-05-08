@@ -43,6 +43,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <limits>
 #include <unordered_map>
 
 #if defined(__unix__)
@@ -549,8 +550,11 @@ bool CommonCaptureManager::Initialize(format::ApiFamilyId                   api_
                 }
             }
             // Check if trim is enabled by hot-key trigger at the first frame.
-            else if (!trace_settings.trim_key.empty() ||
-                     trace_settings.runtime_capture_trigger != CaptureSettings::RuntimeTriggerState::kNotUsed)
+            // Skip this branch when DispatchRays-only mode is on: it reuses the trim_key
+            // hotkey but operates on the kDrawCalls boundary, handled below.
+            else if (!trace_settings.capture_dispatch_rays_only &&
+                     (!trace_settings.trim_key.empty() ||
+                      trace_settings.runtime_capture_trigger != CaptureSettings::RuntimeTriggerState::kNotUsed))
             {
                 // Capture key/trigger only support frames as trim boundaries.
                 GFXRECON_ASSERT(trim_boundary_ == CaptureSettings::TrimBoundary::kFrames);
@@ -581,6 +585,15 @@ bool CommonCaptureManager::Initialize(format::ApiFamilyId                   api_
             {
                 trim_draw_calls_ = trace_settings.trim_draw_calls;
                 capture_mode_    = kModeTrack;
+
+                // Hotkey-armed single DispatchRays capture: piggy-back on the kDrawCalls
+                // machinery but defer choosing the target until the hotkey fires and a
+                // DispatchRays is recorded.
+                if (trace_settings.capture_dispatch_rays_only)
+                {
+                    dispatch_rays_only_ = true;
+                    trim_key_           = trace_settings.trim_key;
+                }
             }
             else
             {
@@ -969,6 +982,20 @@ void CommonCaptureManager::DeactivateTrimmingDrawCalls(std::shared_lock<ApiCallM
             // Stop recording and close file.
             DeactivateTrimming(current_lock);
             GFXRECON_LOG_INFO("Finished recording graphics API capture");
+
+            if (dispatch_rays_only_)
+            {
+                // Re-armable mode: keep state tracker, trim_enabled_, trim_boundary_, and
+                // capture_mode_ alive so the next hotkey-armed DispatchRays can be captured
+                // into its own file. Just reset the indices so future commands route to the
+                // "before" split until the next arming.
+                const auto kSentinel                     = std::numeric_limits<uint32_t>::max();
+                trim_draw_calls_.submit_index            = kSentinel;
+                trim_draw_calls_.command_index           = kSentinel;
+                trim_draw_calls_.draw_call_indices.first = kSentinel;
+                trim_draw_calls_.draw_call_indices.last  = kSentinel;
+                return;
+            }
 
             // No more trim ranges to capture. Capture can be disabled and resources can be released.
             trim_enabled_  = false;
