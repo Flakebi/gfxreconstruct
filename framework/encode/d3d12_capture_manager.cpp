@@ -3712,6 +3712,7 @@ D3D12CaptureManager::GetCommandListsForTrimDrawCalls(ID3D12CommandList_Wrapper* 
         case format::ApiCall_ID3D12GraphicsCommandList_DrawIndexedInstanced:
         case format::ApiCall_ID3D12GraphicsCommandList_Dispatch:
         case format::ApiCall_ID3D12GraphicsCommandList_ExecuteIndirect:
+        case format::ApiCall_ID3D12GraphicsCommandList4_DispatchRays:
         {
             is_draw_call = true;
             break;
@@ -3883,6 +3884,7 @@ D3D12CaptureManager::GetCommandListsForTrimDrawCalls(ID3D12CommandList_Wrapper* 
         case format::ApiCall_ID3D12GraphicsCommandList_DrawIndexedInstanced:
         case format::ApiCall_ID3D12GraphicsCommandList_Dispatch:
         case format::ApiCall_ID3D12GraphicsCommandList_ExecuteIndirect:
+        case format::ApiCall_ID3D12GraphicsCommandList4_DispatchRays:
         {
             switch (split_type)
             {

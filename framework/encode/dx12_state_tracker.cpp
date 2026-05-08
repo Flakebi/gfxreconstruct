@@ -165,6 +165,7 @@ void Dx12StateTracker::TrackCommandExecution(ID3D12CommandList_Wrapper*      lis
         case format::ApiCallId::ApiCall_ID3D12GraphicsCommandList_Dispatch:
         case format::ApiCallId::ApiCall_ID3D12GraphicsCommandList_ExecuteIndirect:
         case format::ApiCallId::ApiCall_ID3D12GraphicsCommandList_ExecuteBundle:
+        case format::ApiCallId::ApiCall_ID3D12GraphicsCommandList4_DispatchRays:
             ++list_info->draw_call_count;
             break;
         default:
