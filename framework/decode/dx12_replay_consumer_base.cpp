@@ -287,6 +287,9 @@ void Dx12ReplayConsumerBase::OverrideEnableDebugLayer(DxObjectInfo* replay_objec
 
 Dx12ReplayConsumerBase::~Dx12ReplayConsumerBase()
 {
+    // loop_frame_boundary_swapchain_ is a non-owning alias to a captured swapchain in
+    // object_info_table_; do not Release it here. DestroyActiveObjects below handles it.
+
     // Wait for pending work to complete before destroying resources.
     const DWORD kWaitMilliseconds = 2000;
     if (WaitIdle(kWaitMilliseconds))
@@ -331,6 +334,40 @@ void Dx12ReplayConsumerBase::ProcessStateEndMarker(uint64_t frame_number)
 void Dx12ReplayConsumerBase::ProcessFrameEndMarker(uint64_t frame_number)
 {
     ++frame_end_marker_count_;
+}
+
+void Dx12ReplayConsumerBase::EmitFrameBoundary()
+{
+    // Reuse a swapchain that was already (re)created during state setup. A single-dispatch capture
+    // typically has the original app's swapchain in its state preamble, so a real DXGI swapchain
+    // bound to a real window is already present in the object table.
+    if (loop_frame_boundary_swapchain_ == nullptr)
+    {
+        for (auto& entry : object_info_table_)
+        {
+            DxObjectInfo& info = entry.second;
+            if ((info.extra_info != nullptr) && (info.extra_info->extra_info_type == DxObjectInfoType::kIDxgiSwapchainInfo) &&
+                (info.object != nullptr))
+            {
+                loop_frame_boundary_swapchain_ = static_cast<IDXGISwapChain*>(info.object);
+                break;
+            }
+        }
+
+        if (loop_frame_boundary_swapchain_ == nullptr)
+        {
+            if (!loop_frame_boundary_init_failed_)
+            {
+                GFXRECON_LOG_WARNING("Loop frame-boundary signal: no IDXGISwapChain found in the captured "
+                                     "state; DX12 single-dispatch loop will run without per-iteration Present.");
+                loop_frame_boundary_init_failed_ = true;
+            }
+            return;
+        }
+        GFXRECON_LOG_INFO("Loop frame-boundary signal: reusing captured swapchain for per-iteration Present.");
+    }
+
+    loop_frame_boundary_swapchain_->Present(0, 0);
 }
 
 void Dx12ReplayConsumerBase::ProcessFillMemoryCommand(uint64_t       memory_id,

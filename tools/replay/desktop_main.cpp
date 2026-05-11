@@ -169,6 +169,15 @@ int main(int argc, const char** argv)
             gfxrecon::decode::VulkanReplayOptions          vulkan_replay_options =
                 GetVulkanReplayOptions(arg_parser, filename, &tracked_object_info_table);
 
+            // --loop-frame on a single-dispatch capture needs VK_EXT_frame_boundary so we can emit
+            // a per-iteration frame signal for profiling tools. Auto-enable the flag that drives
+            // the device-creation request; the per-iteration emit is a no-op when the extension is
+            // absent or when the capture has a real Present.
+            if (enable_frame_loop && !vulkan_replay_options.offscreen_swapchain_frame_boundary)
+            {
+                vulkan_replay_options.offscreen_swapchain_frame_boundary = true;
+            }
+
             bool     quit_after_frame = false;
             uint32_t quit_frame       = std::numeric_limits<uint32_t>::max();
 
@@ -219,6 +228,10 @@ int main(int argc, const char** argv)
 
                 vulkan_replay_consumer = std::make_unique<gfxrecon::decode::VulkanReplayFrameLoopConsumer>(
                     application, vulkan_replay_options, fl_info);
+
+                // Per-iteration frame-boundary signal for single-dispatch loops.
+                auto* consumer_ptr = vulkan_replay_consumer.get();
+                application->RegisterFrameBoundaryEmitter([consumer_ptr]() { consumer_ptr->EmitFrameBoundary(); });
             }
             else
             {
@@ -252,6 +265,13 @@ int main(int argc, const char** argv)
 
             api_replay_options.dx12_replay_options   = &dx_replay_options;
             api_replay_consumer.dx12_replay_consumer = &dx12_replay_consumer;
+
+            if (enable_frame_loop)
+            {
+                application->RegisterFrameBoundaryEmitter([&dx12_replay_consumer]() {
+                    dx12_replay_consumer.EmitFrameBoundary();
+                });
+            }
 #endif // D3D12_SUPPORT
 
 #ifdef GFXRECON_AGS_SUPPORT

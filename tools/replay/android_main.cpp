@@ -172,6 +172,13 @@ void android_main(struct android_app* app)
                 gfxrecon::decode::VulkanReplayOptions          replay_options =
                     GetVulkanReplayOptions(arg_parser, filename, &tracked_object_info_table);
 
+                // --loop-frame on a single-dispatch capture needs VK_EXT_frame_boundary so we can
+                // emit a per-iteration frame signal for profiling tools. Auto-enable.
+                if (enable_frame_loop && !replay_options.offscreen_swapchain_frame_boundary)
+                {
+                    replay_options.offscreen_swapchain_frame_boundary = true;
+                }
+
                 std::unique_ptr<gfxrecon::decode::VulkanReplayConsumer> vulkan_replay_consumer;
 
                 gfxrecon::graphics::FrameLoopInfo fl_info;
@@ -182,6 +189,10 @@ void android_main(struct android_app* app)
 
                     vulkan_replay_consumer = std::make_unique<gfxrecon::decode::VulkanReplayFrameLoopConsumer>(
                         application, replay_options, fl_info);
+
+                    auto* consumer_ptr = vulkan_replay_consumer.get();
+                    application->RegisterFrameBoundaryEmitter(
+                        [consumer_ptr]() { consumer_ptr->EmitFrameBoundary(); });
                 }
                 else
                 {

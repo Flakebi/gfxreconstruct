@@ -252,6 +252,12 @@ class VulkanReplayConsumerBase : public VulkanConsumer
     const graphics::VulkanInstanceTable* GetInstanceTable(const void* handle) const;
 
     const graphics::VulkanDeviceTable* GetDeviceTable(const void* handle) const;
+
+    /// Emit a synthetic VK_FRAME_BOUNDARY_FRAME_END signal on each tracked device's queue. Used by
+    /// the replay loop to mark per-iteration frame boundaries for profiling tools when the capture
+    /// has no Present (e.g. single-dispatch traces). Requires VK_EXT_frame_boundary to have been
+    /// enabled at device creation (driven by options_.offscreen_swapchain_frame_boundary).
+    void EmitFrameBoundary();
     void AddImageHandle(format::HandleId parent_id, format::HandleId id, VkImage handle, VulkanImageInfo&& initial_info)
     {
         AddHandle<VulkanImageInfo>(
@@ -1962,6 +1968,7 @@ class VulkanReplayConsumerBase : public VulkanConsumer
     CommonObjectInfoTable*                                                   object_info_table_;
     bool                                                                     loading_trim_state_;
     bool                                                                     replaying_trimmed_capture_;
+    uint64_t loop_frame_boundary_id_{ 0 }; ///< Monotonic id for synthetic VkFrameBoundaryEXT signals.
     SwapchainImageTracker                                                    swapchain_image_tracker_;
     HardwareBufferMap                                                        hardware_buffers_;
     HardwareBufferMemoryMap                                                  hardware_buffer_memory_info_;

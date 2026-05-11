@@ -50,6 +50,9 @@ class PreloadFileProcessor : public FileProcessor
     /// Skips all blocks before a `StateEndMarker` from preloaded frames.
     static BlockBatch::iterator SkipStateBlocks(uint64_t frame_number, BlockBatch::iterator start);
 
+    /// True when looping a capture that has no frame boundary (e.g. trimmed to a single dispatch).
+    bool IsSingleDispatchLoop() const { return single_dispatch_loop_; }
+
   private:
     constexpr static size_t kWorkingStoreInitialSize = 4096;
 

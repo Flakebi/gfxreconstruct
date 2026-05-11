@@ -370,6 +370,51 @@ void VulkanReplayConsumerBase::WaitDevicesIdle()
     });
 }
 
+void VulkanReplayConsumerBase::EmitFrameBoundary()
+{
+    if (!options_.offscreen_swapchain_frame_boundary)
+    {
+        return;
+    }
+
+    object_info_table_->VisitVkDeviceInfo([this](const VulkanDeviceInfo* device_info) {
+        if (device_info == nullptr)
+        {
+            return;
+        }
+        VkDevice device       = device_info->handle;
+        auto*    device_table = GetDeviceTable(device);
+        if (device_table == nullptr)
+        {
+            return;
+        }
+
+        VkQueue queue = VK_NULL_HANDLE;
+        object_info_table_->VisitVkQueueInfo([&](const VulkanQueueInfo* queue_info) {
+            if ((queue == VK_NULL_HANDLE) && (queue_info != nullptr) && (queue_info->parent == device))
+            {
+                queue = queue_info->handle;
+            }
+        });
+
+        if (queue == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
+        VkFrameBoundaryEXT frame_boundary = {};
+        frame_boundary.sType              = VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT;
+        frame_boundary.flags              = VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT;
+        frame_boundary.frameID            = ++loop_frame_boundary_id_;
+
+        VkSubmitInfo submit_info = {};
+        submit_info.sType        = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.pNext        = &frame_boundary;
+
+        device_table->QueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+    });
+}
+
 void VulkanReplayConsumerBase::ProcessStateBeginMarker(uint64_t frame_number)
 {
     GFXRECON_UNREFERENCED_PARAMETER(frame_number);

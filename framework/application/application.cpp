@@ -68,7 +68,7 @@ Application::Application(const std::string&     name,
     name_(name),
     file_processor_(file_processor), running_(false), paused_(false),
     pause_frame_(std::numeric_limits<uint32_t>::max()), cli_wsi_extension_(cli_wsi_extension),
-    fps_info_(nullptr), frame_loop_info_{ nullptr }
+    fps_info_(nullptr), frame_loop_info_{ nullptr }, frame_boundary_emitters_()
 {
     if (!cli_wsi_extension_.empty())
     {
@@ -175,6 +175,18 @@ void Application::Run()
 
             if ((frame_loop_info_ != nullptr) && (frame_loop_info_->IsLooping()))
             {
+                // For loops over captures with no captured Present/frame-end (single-dispatch
+                // captures), invoke the registered API-level emitters so profiling/capture tools
+                // see a frame boundary per iteration. Present-bounded captures already emit one
+                // via their replayed Present block.
+                if (GetPreloadFileProcessor()->IsSingleDispatchLoop())
+                {
+                    for (const auto& emitter : frame_boundary_emitters_)
+                    {
+                        emitter();
+                    }
+                }
+
                 // Quit when frame looping has finished.
                 frame_loop_info_->DecrementLoopIterations();
                 GFXRECON_LOG_INFO("Looping frame (%i iterations remaining)", frame_loop_info_->GetLoopIterations());

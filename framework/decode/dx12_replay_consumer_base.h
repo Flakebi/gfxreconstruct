@@ -85,6 +85,11 @@ class Dx12ReplayConsumerBase : public Dx12Consumer
 
     void PostReplay();
 
+    /// Emit a synthetic IDXGISwapChain::Present on a lazily-created hidden swapchain. Used by the
+    /// replay loop to mark per-iteration frame boundaries for profiling tools (RGD/RGP/PIX) when
+    /// the capture has no Present (e.g. single-dispatch traces).
+    void EmitFrameBoundary();
+
     virtual void ProcessStateBeginMarker(uint64_t frame_number) override;
 
     virtual void ProcessStateEndMarker(uint64_t frame_number) override;
@@ -1409,6 +1414,11 @@ class Dx12ReplayConsumerBase : public Dx12Consumer
     uint64_t                                              frame_end_marker_count_;
     std::unordered_map<ID3D12MetaCommand*, GUID>          meta_command_guids_;
     std::unordered_set<ID3D12CommandQueue*>               trim_state_tile_update_queues_;
+
+    // Cached pointer (non-owning) to a swapchain reused by EmitFrameBoundary() for the per-iteration
+    // Present in a single-dispatch loop. Resolved lazily from the captured object table.
+    IDXGISwapChain* loop_frame_boundary_swapchain_{ nullptr };
+    bool            loop_frame_boundary_init_failed_{ false };
 
 #ifdef GFXRECON_AGS_SUPPORT
     graphics::Dx12AgsMarkerInjector* ags_marker_injector_{ nullptr };

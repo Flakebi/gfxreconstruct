@@ -33,6 +33,7 @@
 #include "graphics/fps_info.h"
 #include "graphics/frame_loop_info.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -83,6 +84,14 @@ class Application final
 
     void SetFrameLoopInfo(graphics::FrameLoopInfo* frame_loop_info) { frame_loop_info_ = frame_loop_info; }
 
+    /// Register a callback that emits a synthetic frame boundary signal (e.g. VkFrameBoundaryEXT or
+    /// IDXGISwapChain::Present) for the calling consumer. Invoked once per loop iteration when the
+    /// loop frame has no captured frame boundary, so that profiling tools see per-iteration frames.
+    void RegisterFrameBoundaryEmitter(std::function<void()> emitter)
+    {
+        frame_boundary_emitters_.push_back(std::move(emitter));
+    }
+
     bool InitializeWsiContext(const char* surfaceExtensionName, void* pPlatformSpecificData = nullptr);
 
 #if defined(WIN32)
@@ -118,6 +127,7 @@ class Application final
     std::string                                                  cli_wsi_extension_; ///< WSI extension selected on CLI, empty string if no CLI selection
     graphics::FpsInfo*                                           fps_info_;          ///< A optional FPS info object that logs the FPS across a configured framerange.
                                                                                      ///< capture file data.
+    std::vector<std::function<void()>>                           frame_boundary_emitters_; ///< Per-API hooks invoked between iterations of a single-dispatch loop.
     // clang-format on
 };
 
