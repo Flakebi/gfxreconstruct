@@ -68,6 +68,8 @@ class PreloadFileProcessor : public FileProcessor
 
     BlockBatch::iterator loop_reset_point_;
     bool                 loop_replay_ = false; // Tells replay to ignore first frame boundary block
+    // True when the loop frame has no frame boundary in the trace (single-dispatch capture).
+    bool single_dispatch_loop_ = false;
 };
 
 GFXRECON_END_NAMESPACE(decode)

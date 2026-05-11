@@ -128,6 +128,8 @@ static void PrintUsage(const char* exe_name)
     GFXRECON_WRITE_CONSOLE("          \t\tas --pause-frame 1).");
     GFXRECON_WRITE_CONSOLE("  --loop-frame <N>\tEnable frame repeat (experimental).");
     GFXRECON_WRITE_CONSOLE("          \t\tN specifies the frame number to repeat; default is 0.");
+    GFXRECON_WRITE_CONSOLE("          \t\tFor single-dispatch captures with no Present, pass");
+    GFXRECON_WRITE_CONSOLE("          \t\t--loop-frame 1 to repeat the dispatch (combine with --loop-count).");
     GFXRECON_WRITE_CONSOLE("  --loop-count <N>\tSpecify the number of times to repeat the frame when");
     GFXRECON_WRITE_CONSOLE("          \t\tloop frame is enabled. Default is 0: replay forever.");
     GFXRECON_WRITE_CONSOLE("  --screenshot-all");

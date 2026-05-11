@@ -36,7 +36,16 @@ PreloadFileProcessor::PreloadFileProcessor() : working_uncompressed_store_(kWork
 void PreloadFileProcessor::PreloadLoopFrame()
 {
     PreloadNextFrames(1);
-    loop_replay_      = true;
+    loop_replay_ = true;
+    // A capture trimmed to a single dispatch (e.g. GFXRECON_CAPTURE_DISPATCH_RAYS_ONLY) has no
+    // Present/frame-end marker, so the preload reaches EOF rather than a frame boundary. Treat the
+    // queued post-state blocks as the loop frame in that case.
+    single_dispatch_loop_ = (final_process_state_ == ProcessBlockState::kEndProcessing) && bool(replay_cursor_);
+    if (single_dispatch_loop_)
+    {
+        GFXRECON_LOG_INFO(
+            "Looping single-dispatch capture: no frame boundary in trace, treating preloaded blocks as the loop frame");
+    }
     loop_reset_point_ = SkipStateBlocks(current_frame_number_, replay_cursor_);
 }
 void PreloadFileProcessor::PreloadNextFrames(size_t count)
@@ -311,8 +320,11 @@ FileProcessor::ProcessBlockState PreloadFileProcessor::ReplayOneFrame()
         if ((process_state == ProcessBlockState::kRunning) && !replay_cursor_)
         {
             // We did not end on a frame boundary, but that's okay if preloading end frame is beyond last complete frame
-            // and there is a last incomplete frame, because of interrupt during record
-            process_state = ProcessBlockState::kEndProcessing;
+            // and there is a last incomplete frame, because of interrupt during record.
+            // For a single-dispatch loop, the trace has no frame boundary at all and cursor exhaustion is the
+            // expected end of the loop frame.
+            process_state =
+                single_dispatch_loop_ ? ProcessBlockState::kFrameBoundary : ProcessBlockState::kEndProcessing;
         }
     }
 
