@@ -168,6 +168,13 @@ class Dx12StateWriter
 
     void WriteCommandListState(const Dx12StateTable& state_table);
 
+    // For dispatch-rays-only single-dispatch traces: emit ONLY the recorded commands (Reset, Set...,
+    // DispatchRays, Close) of every is_trim_target command list. Intended to be called from WriteState
+    // after the state-recreation EndMarker so each replay-loop iteration re-runs the build before
+    // re-submitting via the captured ExecuteCommandLists. Does not emit creation calls (those are
+    // already written inside the state-recreation block by WriteCommandListState).
+    void WriteTrimTargetCommandListCommandsOnly(const Dx12StateTable& state_table);
+
     void WriteCommandListCreation(const ID3D12CommandList_Wrapper* list_wrapper, const Dx12StateTable& state_table);
 
     void WriteCommandListCommands(const ID3D12CommandList_Wrapper* list_wrapper, const Dx12StateTable& state_table);

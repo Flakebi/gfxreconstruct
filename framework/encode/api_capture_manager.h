@@ -250,6 +250,7 @@ class ApiCaptureManager
     util::ScreenshotFormat GetScreenshotFormat() { return common_manager_->GetScreenshotFormat(); }
     auto                   GetTrimBoundary() const { return common_manager_->GetTrimBoundary(); }
     auto                   GetTrimDrawCalls() const { return common_manager_->GetTrimDrawCalls(); }
+    auto                   IsDispatchRaysOnly() const { return common_manager_->IsDispatchRaysOnly(); }
     bool                   GetUseAssetFile() const { return common_manager_->GetUseAssetFile(); }
     CommandWriter*         GetCommandWriter() { return common_manager_->GetCommandWriter(); }
     bool GetIgnoreFrameBoundaryAndroid() const { return common_manager_->GetIgnoreFrameBoundaryAndroid(); }

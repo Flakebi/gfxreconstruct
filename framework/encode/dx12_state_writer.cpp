@@ -180,6 +180,18 @@ void Dx12StateWriter::WriteState(const Dx12StateTable& state_table, uint64_t fra
 
     marker.marker_type = format::kEndMarker;
     output_stream_->Write(&marker, sizeof(marker));
+
+    // For dispatch-rays-only single-dispatch traces with looping support, emit the trim-target
+    // command list's recorded commands (Reset, Set..., DispatchRays, Close) OUTSIDE the state-
+    // recreation markers. Each loop iteration on replay then re-runs the command list build
+    // before re-submitting via the captured ExecuteCommandLists, avoiding any GPU-side staleness
+    // from re-submitting the same Closed cmd list across iterations. The list's *creation*
+    // (CreateCommandAllocator + CreateCommandList) was already written above inside the state
+    // markers, since it must run only once.
+    if (D3D12CaptureManager::Get()->IsDispatchRaysOnly())
+    {
+        WriteTrimTargetCommandListCommandsOnly(state_table);
+    }
 }
 
 void Dx12StateWriter::StandardCreateWrite(format::HandleId object_id, const DxWrapperInfo& wrapper_info)
@@ -1172,6 +1184,7 @@ void Dx12StateWriter::WriteCommandListState(const Dx12StateTable& state_table)
 
     const bool trim_to_draw_enabled =
         (D3D12CaptureManager::Get()->GetTrimBoundary() == CaptureSettings::TrimBoundary::kDrawCalls);
+    const bool dispatch_rays_only_mode = D3D12CaptureManager::Get()->IsDispatchRaysOnly();
 
     state_table.VisitWrappers([&](ID3D12CommandList_Wrapper* list_wrapper) {
         GFXRECON_ASSERT(list_wrapper != nullptr);
@@ -1215,7 +1228,15 @@ void Dx12StateWriter::WriteCommandListState(const Dx12StateTable& state_table)
         if (list_info->is_closed)
         {
             WriteCommandListCreation(list_wrapper, state_table);
-            WriteCommandListCommands(list_wrapper, state_table);
+            // In dispatch-rays-only mode, defer the trim target's commands so they're emitted
+            // outside the state-recreation block (see WriteTrimTargetCommandListCommandsOnly,
+            // called from WriteState after the End marker). The list's creation is still emitted
+            // here so the underlying ID3D12GraphicsCommandList exists at replay time; per-iteration
+            // Reset+Re-record happens via the deferred block.
+            if (!(dispatch_rays_only_mode && list_info->is_trim_target))
+            {
+                WriteCommandListCommands(list_wrapper, state_table);
+            }
         }
         else
         {
@@ -1245,6 +1266,18 @@ void Dx12StateWriter::WriteCommandListState(const Dx12StateTable& state_table)
         // Write commands for all open command lists.
         WriteCommandListCommands(list_wrapper, state_table);
     }
+}
+
+void Dx12StateWriter::WriteTrimTargetCommandListCommandsOnly(const Dx12StateTable& state_table)
+{
+    state_table.VisitWrappers([&](ID3D12CommandList_Wrapper* list_wrapper) {
+        GFXRECON_ASSERT(list_wrapper != nullptr);
+        auto list_info = list_wrapper->GetObjectInfo();
+        if ((list_info != nullptr) && list_info->is_trim_target && list_info->is_closed)
+        {
+            WriteCommandListCommands(list_wrapper, state_table);
+        }
+    });
 }
 
 void Dx12StateWriter::WriteCommandListCommands(const ID3D12CommandList_Wrapper* list_wrapper,
