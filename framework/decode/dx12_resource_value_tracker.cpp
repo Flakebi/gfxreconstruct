@@ -24,6 +24,7 @@
 #include "decode/dx12_resource_value_tracker.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <map>
 
 GFXRECON_BEGIN_NAMESPACE(gfxrecon)
@@ -133,8 +134,17 @@ bool Dx12ResourceValueTracker::AddTrackedResourceValue(format::HandleId         
     }
     else
     {
+        had_failures_ = true;
+        ++failure_count_;
         GFXRECON_LOG_ERROR_ONCE(
             "Failed to find the required data for DXR optimization. The optimized result may be invalid.");
+        // Per-failure detail (DEBUG only) lets us identify which SBT entry / GPU-VA the tracker
+        // could not correlate, without flooding the default log.
+        GFXRECON_LOG_DEBUG("Dx12ResourceValueTracker: failed to correlate resource id %" PRIu64
+                           " offset %" PRIu64 " type %u with any FillMemory/InitSubresource block.",
+                           static_cast<uint64_t>(resource_id),
+                           offset,
+                           static_cast<unsigned>(type));
         return false;
     }
 }

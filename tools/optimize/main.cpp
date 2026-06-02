@@ -58,14 +58,15 @@ extern "C"
 }
 #endif
 
-constexpr char kOptions[] =
-    "-h|--help,--version,--no-debug-popup,--d3d12-pso-removal,--d3d12-resource-removal,--dxr,--dxr-experimental";
+constexpr char kOptions[] = "-h|--help,--version,--no-debug-popup,--d3d12-pso-removal,--d3d12-resource-removal,--dxr,"
+                            "--dxr-experimental,--skip-dxr";
 constexpr char kArguments[] = "--gpu";
 
 constexpr char kD3d12PsoRemoval[]             = "--d3d12-pso-removal";
 constexpr char kD3d12ResourceRemoval[]        = "--d3d12-resource-removal";
 constexpr char kDx12OptimizeDxr[]             = "--dxr";
 constexpr char kDx12OptimizeDxrExperimental[] = "--dxr-experimental";
+constexpr char kSkipDx12Dxr[]                 = "--skip-dxr";
 
 static void PrintUsage(const char* exe_name)
 {
@@ -103,6 +104,10 @@ static void PrintUsage(const char* exe_name)
     GFXRECON_WRITE_CONSOLE("  --d3d12-resource-removal\tD3D12-only: Remove initialization of unreferenced resources "
                            "(experimental, off by default).");
     GFXRECON_WRITE_CONSOLE("  --dxr\t\t\t\tD3D12-only: Optimize for DXR and ExecuteIndirect replay.");
+    GFXRECON_WRITE_CONSOLE("  --skip-dxr\t\t\tD3D12-only: Skip the DXR/ExecuteIndirect resource-value optimization in");
+    GFXRECON_WRITE_CONSOLE("          \t\t\tauto mode. Useful when the DXR pre-pass produces an invalid optimized");
+    GFXRECON_WRITE_CONSOLE("          \t\t\tcapture (e.g. SBT shader-identifier remapping incomplete). PSO removal");
+    GFXRECON_WRITE_CONSOLE("          \t\t\tstill runs; SBT remapping falls back to the replayer's dynamic mapper.");
     GFXRECON_WRITE_CONSOLE("  --gpu <index>\t\t\tUse the specified device for the optimizer replay, where index");
     GFXRECON_WRITE_CONSOLE("          \t\t\tis the zero-based index to the array of physical devices");
     GFXRECON_WRITE_CONSOLE("          \t\t\treturned by vkEnumeratePhysicalDevices or IDXGIFactory1::EnumAdapters1.");
@@ -287,6 +292,7 @@ int main(int argc, const char** argv)
 
         // Parameter checking and API detection
         gfxrecon::decode::Dx12OptimizationOptions dx12_options;
+        const bool skip_dxr                                = arg_parser.IsOptionSet(kSkipDx12Dxr);
         dx12_options.optimize_resource_values              = arg_parser.IsOptionSet(kDx12OptimizeDxr);
         dx12_options.optimize_resource_values_experimental = arg_parser.IsOptionSet(kDx12OptimizeDxrExperimental);
         dx12_options.remove_redundant_psos                 = arg_parser.IsOptionSet(kD3d12PsoRemoval);
@@ -304,7 +310,15 @@ int main(int argc, const char** argv)
             dx12_options.optimize_resource_values = true;
         }
 
-        // Automatic mode. User specified no options.
+        if (skip_dxr && dx12_options.optimize_resource_values)
+        {
+            GFXRECON_WRITE_CONSOLE("--skip-dxr overrides --dxr / --dxr-experimental; DXR resource-value "
+                                   "optimization will not run.");
+            dx12_options.optimize_resource_values              = false;
+            dx12_options.optimize_resource_values_experimental = false;
+        }
+
+        // Automatic mode. User specified no options other than --skip-dxr.
         if (!(dx12_options.optimize_resource_values || dx12_options.remove_redundant_psos ||
               dx12_options.remove_redundant_resources))
         {
@@ -321,7 +335,7 @@ int main(int argc, const char** argv)
 
             if (detected_d3d12)
             {
-                dx12_options.optimize_resource_values = true;
+                dx12_options.optimize_resource_values = !skip_dxr;
                 dx12_options.remove_redundant_psos    = true;
                 // Redundant resource removal is experimental and disabled by default.
                 dx12_options.remove_redundant_resources = false;

@@ -104,6 +104,13 @@ class Dx12ResourceValueTracker
 
     virtual void GetTrackedResourceValues(Dx12FillCommandResourceValueMap& values);
 
+    // True if AddTrackedResourceValue ever failed to correlate a SBT / GPU-VA byte back to an originating
+    // FillMemory / InitSubresource block. When set, the optimizer must not emit any
+    // kFillMemoryResourceValueCommand annotations — doing so would disable the replayer's dynamic SBT
+    // remapper and the output capture would replay with stale capture-time shader identifiers.
+    bool     HadFailures() const { return had_failures_; }
+    uint64_t GetFailureCount() const { return failure_count_; }
+
   protected:
     typedef std::vector<std::pair<uint64_t, uint64_t>> ResourceRanges;
 
@@ -142,6 +149,9 @@ class Dx12ResourceValueTracker
 
     std::function<DxObjectInfo*(format::HandleId id)> get_object_info_func_;
     std::function<uint64_t(void)>                     get_current_block_index_func_;
+
+    bool     had_failures_{ false };
+    uint64_t failure_count_{ 0 };
 
   public:
     ////// Begin members to support experimental tracking for experimental DXR optimization:

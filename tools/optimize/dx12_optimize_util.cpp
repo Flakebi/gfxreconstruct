@@ -256,15 +256,61 @@ bool GetDxrOptimizationInfo(const std::string&               input_filename,
             resource_value_tracking_consumer->GetTrackedResourceValues(info.fill_command_resource_values);
             resource_value_tracking_consumer->GetUnassociatedResourceValues(info.unassociated_resource_values);
 
+            const bool     tracker_had_failures = resource_value_tracking_consumer->ResourceValueTrackerHadFailures();
+            const uint64_t failure_count        = resource_value_tracking_consumer->ResourceValueTrackerFailureCount();
+            const bool     dxr_workload_seen    = resource_value_tracking_consumer->ContainsDxrWorkload() ||
+                                           resource_value_tracking_consumer->ContainsEiWorkload();
+
+            // Summary so the user can see what the pre-pass produced. Always print; this is cheap and the
+            // information is critical for diagnosing "optimized capture won't replay" reports.
+            GFXRECON_WRITE_CONSOLE(
+                "DXR pre-pass: tracked %zu FillMemory patch sets; %zu unassociated values; %" PRIu64
+                " correlation failures; dxr_workload=%d; ei_workload=%d.",
+                info.fill_command_resource_values.size(),
+                info.unassociated_resource_values.size(),
+                failure_count,
+                resource_value_tracking_consumer->ContainsDxrWorkload() ? 1 : 0,
+                resource_value_tracking_consumer->ContainsEiWorkload() ? 1 : 0);
+
             if (BypassResourceValueOptimization(*resource_value_tracking_consumer, options, info))
             {
                 // No further DXR/EI optimization needed if the file was already optimized.
                 options.optimize_resource_values = false;
             }
+            else if (tracker_had_failures)
+            {
+                // The tracker couldn't correlate at least one SBT/GPU-VA byte with a FillMemory block.
+                // Emitting kFillMemoryResourceValueCommand annotations now (or a noop block) would disable
+                // the replayer's dynamic SBT remapper at replay time and leave stale capture-time shader
+                // identifiers in the SBT — that is the DXGI_ERROR_DEVICE_REMOVED users hit. Skip the
+                // optimization entirely so the replayer keeps using its dynamic mapper.
+                GFXRECON_WRITE_CONSOLE(
+                    "DXR shader-identifier tracking incomplete (%" PRIu64
+                    " failures). Skipping resource-value optimization; the output capture will rely on the "
+                    "replayer's dynamic SBT remapper. Re-run with --skip-dxr to suppress this attempt.",
+                    failure_count);
+                options.optimize_resource_values             = false;
+                info.inject_noop_resource_value_optimization = false;
+                info.fill_command_resource_values            = decode::Dx12FillCommandResourceValueMap();
+                info.unassociated_resource_values            = decode::Dx12UnassociatedResourceValueMap();
+            }
+            else if (dxr_workload_seen && info.fill_command_resource_values.empty() &&
+                     info.unassociated_resource_values.empty())
+            {
+                // DXR work was clearly present but the tracker produced no entries and did not log any
+                // failures. That is itself a signal something is wrong (perhaps the SBT is populated
+                // through a path the tracker doesn't follow). Do NOT emit a noop block, because the noop
+                // block would still disable the replayer's dynamic SBT remapper.
+                GFXRECON_WRITE_CONSOLE(
+                    "DXR workload detected but resource-value tracker produced no entries. Skipping "
+                    "resource-value optimization to preserve dynamic SBT remapping at replay.");
+                options.optimize_resource_values             = false;
+                info.inject_noop_resource_value_optimization = false;
+            }
             else if (info.fill_command_resource_values.empty() && info.unassociated_resource_values.empty())
             {
-                // If the file is not optimized for DXR/EI but does not contain any resource values that need to be
-                // mapped during replay, mark it as optimized.
+                // Genuinely no DXR/EI work in the file: safe to inject the noop block so the replayer
+                // treats this file as already-optimized.
                 info.inject_noop_resource_value_optimization = true;
             }
 

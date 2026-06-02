@@ -55,6 +55,19 @@ class Dx12ResourceValueMapper
 
     void GetUnassociatedResourceValues(Dx12UnassociatedResourceValueMap& unassociated_values);
 
+    // True if the tracker ever failed to correlate a SBT byte / GPU-VA back to a FillMemory / InitSubresource
+    // block. The optimizer must check this before emitting kFillMemoryResourceValueCommand annotations: any
+    // annotation block disables the replayer's dynamic SBT remapper, so producing one when the tracker had
+    // failures yields an output capture with stale capture-time shader identifiers (DXGI_ERROR_DEVICE_REMOVED).
+    bool ResourceValueTrackerHadFailures() const
+    {
+        return (resource_value_tracker_ != nullptr) && resource_value_tracker_->HadFailures();
+    }
+    uint64_t ResourceValueTrackerFailureCount() const
+    {
+        return (resource_value_tracker_ != nullptr) ? resource_value_tracker_->GetFailureCount() : 0;
+    }
+
     void SetUnassociatedResourceValues(Dx12FillCommandResourceValueMap&&  tracked_values,
                                        Dx12UnassociatedResourceValueMap&& unassociated_values);
 

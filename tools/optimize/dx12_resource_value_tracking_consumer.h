@@ -45,6 +45,15 @@ class Dx12ResourceValueTrackingConsumer : public Dx12ReplayConsumer
 
     void GetUnassociatedResourceValues(Dx12UnassociatedResourceValueMap& unassociated_values);
 
+    bool ResourceValueTrackerHadFailures()
+    {
+        return (GetResourceValueMapper() != nullptr) && GetResourceValueMapper()->ResourceValueTrackerHadFailures();
+    }
+    uint64_t ResourceValueTrackerFailureCount()
+    {
+        return (GetResourceValueMapper() != nullptr) ? GetResourceValueMapper()->ResourceValueTrackerFailureCount() : 0;
+    }
+
     void SetUnassociatedResourceValues(Dx12FillCommandResourceValueMap&&  tracked_values,
                                        Dx12UnassociatedResourceValueMap&& unassociated_values);
 
