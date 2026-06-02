@@ -48,8 +48,11 @@ void Dx12ShaderIdMap::Add(const uint8_t* old_shader_id, const uint8_t* new_shade
     Dx12ShaderIdentifier old_shader_identifier = PackDx12ShaderIdentifier(old_shader_id);
     Dx12ShaderIdentifier new_shader_identifier = PackDx12ShaderIdentifier(new_shader_id);
 
-    shader_id_map_.insert(std::pair<Dx12ShaderIdentifier, Dx12ShaderIdentifier>(std::move(old_shader_identifier),
-                                                                                std::move(new_shader_identifier)));
+    // Overwrite any existing mapping for this capture-time identifier. Under --loop-frame the loop
+    // re-runs CreateStateObject / GetShaderIdentifier each iteration, producing a fresh replay-time
+    // identifier for the same capture-time key; if we used plain insert(), the stale iter-1 value
+    // would persist and SBT patches would address a destroyed state object → DEVICE_REMOVED.
+    shader_id_map_.insert_or_assign(std::move(old_shader_identifier), std::move(new_shader_identifier));
 }
 
 void Dx12ShaderIdMap::Remove(const uint8_t* old_shader_id)
