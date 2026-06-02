@@ -931,5 +931,112 @@ void Dx12ReferencedResourceConsumer::Process_ID3D12GraphicsCommandList_Reset(con
     table_.ResetUser(object_id);
 }
 
+void Dx12ReferencedResourceConsumer::Process_ID3D12GraphicsCommandList4_BuildRaytracingAccelerationStructure(
+    const ApiCallInfo&                                                                            call_info,
+    format::HandleId                                                                              object_id,
+    StructPointerDecoder<Decoded_D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>*             pDesc,
+    UINT                                                                                          NumPostbuildInfoDescs,
+    StructPointerDecoder<Decoded_D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC>*    pPostbuildInfoDescs)
+{
+    auto mark = [&](D3D12_GPU_VIRTUAL_ADDRESS va) {
+        if (va == 0)
+        {
+            return;
+        }
+        auto resource = GetResourceIDForBufferLocation(va);
+        if (resource != format::kNullHandleId)
+        {
+            table_.AddResourceToUser(object_id, resource);
+        }
+    };
+
+    if (pDesc->IsNull())
+    {
+        return;
+    }
+    const auto* build_desc = pDesc->GetPointer();
+
+    mark(build_desc->DestAccelerationStructureData);
+    mark(build_desc->SourceAccelerationStructureData);
+    mark(build_desc->ScratchAccelerationStructureData);
+
+    const auto& inputs = build_desc->Inputs;
+    if (inputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL)
+    {
+        mark(inputs.InstanceDescs);
+    }
+    else if (inputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL)
+    {
+        auto mark_geometry = [&](const D3D12_RAYTRACING_GEOMETRY_DESC& geom) {
+            if (geom.Type == D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES)
+            {
+                mark(geom.Triangles.Transform3x4);
+                mark(geom.Triangles.IndexBuffer);
+                mark(geom.Triangles.VertexBuffer.StartAddress);
+            }
+            else if (geom.Type == D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS)
+            {
+                mark(geom.AABBs.AABBs.StartAddress);
+            }
+        };
+
+        if (inputs.DescsLayout == D3D12_ELEMENTS_LAYOUT_ARRAY && inputs.pGeometryDescs != nullptr)
+        {
+            for (UINT i = 0; i < inputs.NumDescs; ++i)
+            {
+                mark_geometry(inputs.pGeometryDescs[i]);
+            }
+        }
+        else if (inputs.DescsLayout == D3D12_ELEMENTS_LAYOUT_ARRAY_OF_POINTERS && inputs.ppGeometryDescs != nullptr)
+        {
+            for (UINT i = 0; i < inputs.NumDescs; ++i)
+            {
+                if (inputs.ppGeometryDescs[i] != nullptr)
+                {
+                    mark_geometry(*inputs.ppGeometryDescs[i]);
+                }
+            }
+        }
+    }
+}
+
+void Dx12ReferencedResourceConsumer::Process_ID3D12GraphicsCommandList4_DispatchRays(
+    const ApiCallInfo&                                      call_info,
+    format::HandleId                                        object_id,
+    StructPointerDecoder<Decoded_D3D12_DISPATCH_RAYS_DESC>* pDesc)
+{
+    if (pDesc->IsNull())
+    {
+        return;
+    }
+    const auto* desc = pDesc->GetPointer();
+
+    auto mark = [&](D3D12_GPU_VIRTUAL_ADDRESS va) {
+        if (va == 0)
+        {
+            return;
+        }
+        auto resource = GetResourceIDForBufferLocation(va);
+        if (resource != format::kNullHandleId)
+        {
+            table_.AddResourceToUser(object_id, resource);
+        }
+    };
+
+    mark(desc->RayGenerationShaderRecord.StartAddress);
+    mark(desc->MissShaderTable.StartAddress);
+    mark(desc->HitGroupTable.StartAddress);
+    mark(desc->CallableShaderTable.StartAddress);
+}
+
+void Dx12ReferencedResourceConsumer::ProcessSetTlasToBlasRelationCommand(format::HandleId                     parent,
+                                                                         const std::vector<format::HandleId>& children)
+{
+    for (auto child : children)
+    {
+        table_.AddResource(parent, child, true);
+    }
+}
+
 GFXRECON_END_NAMESPACE(decode)
 GFXRECON_END_NAMESPACE(gfxrecon)

@@ -1901,6 +1901,83 @@ void Dx12StateWriter::WriteAccelerationStructuresState(
             accel_struct_file_bytes += inputs_data_ptr_file_size;
         }
 
+        // Emit a parent-to-child dependency meta-block so the optimizer's "remove unreferenced resources"
+        // pass keeps the init data of buffers that this AS build reads via raw GPU VA. Without this,
+        // BLAS geometry buffers and TLAS-referenced BLAS buffers would be stripped, causing
+        // DXGI_ERROR_DEVICE_REMOVED at replay. Mirrors the Vulkan TLAS-to-BLAS dependency block.
+        if (as_build.destination_resource != nullptr)
+        {
+            std::set<format::HandleId> dep_buffer_ids;
+
+            auto resolve = [&](D3D12_GPU_VIRTUAL_ADDRESS va) {
+                if (va == 0)
+                {
+                    return;
+                }
+                format::HandleId id    = format::kNullHandleId;
+                bool             found = false;
+                gpu_va_map_.Map(va, &id, &found);
+                if (found && id != format::kNullHandleId)
+                {
+                    dep_buffer_ids.insert(id);
+                }
+            };
+
+            if ((as_build.inputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL) &&
+                !as_build.is_tlas_with_array_of_pointers && (inputs_data_ptr != nullptr))
+            {
+                constexpr auto stride = sizeof(D3D12_RAYTRACING_INSTANCE_DESC);
+                constexpr auto offset = offsetof(D3D12_RAYTRACING_INSTANCE_DESC, AccelerationStructure);
+                for (UINT i = 0; i < as_build.inputs.NumDescs; ++i)
+                {
+                    auto* va_ptr =
+                        reinterpret_cast<D3D12_GPU_VIRTUAL_ADDRESS*>(inputs_data_ptr + i * stride + offset);
+                    resolve(*va_ptr);
+                }
+            }
+            else if (as_build.inputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL)
+            {
+                for (const auto& geom : as_build.inputs_geometry_descs)
+                {
+                    if (geom.Type == D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES)
+                    {
+                        resolve(geom.Triangles.Transform3x4);
+                        resolve(geom.Triangles.IndexBuffer);
+                        resolve(geom.Triangles.VertexBuffer.StartAddress);
+                    }
+                    else if (geom.Type == D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS)
+                    {
+                        resolve(geom.AABBs.AABBs.StartAddress);
+                    }
+                }
+            }
+
+            const format::HandleId parent_id = as_build.destination_resource->GetCaptureId();
+            dep_buffer_ids.erase(parent_id);
+
+            if (!dep_buffer_ids.empty())
+            {
+                format::ParentToChildDependencyHeader hdr{};
+                const size_t                          child_count = dep_buffer_ids.size();
+                hdr.meta_header.block_header.type                 = format::BlockType::kMetaDataBlock;
+                hdr.meta_header.block_header.size =
+                    format::GetMetaDataBlockBaseSize(hdr) + child_count * sizeof(format::HandleId);
+                hdr.meta_header.meta_data_id = format::MakeMetaDataId(
+                    format::ApiFamilyId::ApiFamily_D3D12, format::MetaDataType::kParentToChildDependency);
+                hdr.thread_id       = thread_id_;
+                hdr.dependency_type = format::ParentToChildDependencyType::kAccelerationStructuresDependency;
+                hdr.parent_id       = parent_id;
+                hdr.child_count     = static_cast<uint32_t>(child_count);
+
+                output_stream_->Write(&hdr, sizeof(hdr));
+                for (format::HandleId child : dep_buffer_ids)
+                {
+                    output_stream_->Write(&child, sizeof(child));
+                }
+                accel_struct_file_bytes += sizeof(hdr) + child_count * sizeof(format::HandleId);
+            }
+        }
+
         // Track which accel struct addresses have been written to the trim state block.
         if (as_build.inputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL)
         {

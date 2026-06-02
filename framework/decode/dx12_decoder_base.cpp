@@ -306,6 +306,15 @@ void Dx12DecoderBase::DispatchInitDx12AccelerationStructureCommand(
     }
 }
 
+void Dx12DecoderBase::DispatchSetTlasToBlasDependencyCommand(format::HandleId                     parent,
+                                                             const std::vector<format::HandleId>& children)
+{
+    for (auto consumer : consumers_)
+    {
+        consumer->ProcessSetTlasToBlasRelationCommand(parent, children);
+    }
+}
+
 void Dx12DecoderBase::DispatchGetDxgiAdapterInfo(const format::DxgiAdapterInfoCommandHeader& dx12_adapter_info_header)
 {
     for (auto consumer : consumers_)

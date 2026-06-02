@@ -207,6 +207,9 @@ class Dx12DecoderBase : public ApiDecoder
         const std::vector<format::InitDx12AccelerationStructureGeometryDesc>& geometry_descs,
         const uint8_t*                                                        build_inputs_data) override;
 
+    virtual void DispatchSetTlasToBlasDependencyCommand(format::HandleId                     parent,
+                                                        const std::vector<format::HandleId>& children) override;
+
     virtual void DispatchGetDxgiAdapterInfo(const format::DxgiAdapterInfoCommandHeader& adapter_info_header) override;
 
     virtual void

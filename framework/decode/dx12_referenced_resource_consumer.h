@@ -347,6 +347,22 @@ class Dx12ReferencedResourceConsumer : public Dx12Consumer
                                                          format::HandleId   pAllocator,
                                                          format::HandleId   pInitialState) override;
 
+    virtual void Process_ID3D12GraphicsCommandList4_BuildRaytracingAccelerationStructure(
+        const ApiCallInfo&                                                                       call_info,
+        format::HandleId                                                                         object_id,
+        StructPointerDecoder<Decoded_D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>*        pDesc,
+        UINT                                                                                     NumPostbuildInfoDescs,
+        StructPointerDecoder<Decoded_D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC>*
+            pPostbuildInfoDescs) override;
+
+    virtual void Process_ID3D12GraphicsCommandList4_DispatchRays(
+        const ApiCallInfo&                                      call_info,
+        format::HandleId                                        object_id,
+        StructPointerDecoder<Decoded_D3D12_DISPATCH_RAYS_DESC>* pDesc) override;
+
+    virtual void ProcessSetTlasToBlasRelationCommand(format::HandleId                     parent,
+                                                     const std::vector<format::HandleId>& children) override;
+
   private:
     struct DescriptorRange
     {

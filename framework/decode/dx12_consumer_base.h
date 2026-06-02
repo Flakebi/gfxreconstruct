@@ -90,6 +90,14 @@ class Dx12ConsumerBase : public MetadataConsumerBase, public MarkerConsumerBase
                                               const uint8_t*                       parameters_data)
     {}
 
+    // Mirrors VulkanConsumerBase::ProcessSetTlasToBlasRelationCommand: declares that the parent handle's
+    // replay correctness depends on the listed child handles being preserved. For D3D12 the handles are
+    // ID3D12Resource buffer IDs (AS destination buffer as parent; geometry / instance / scratch / source-AS
+    // buffers as children) so the optimizer keeps their init data even when only the parent is bound.
+    virtual void ProcessSetTlasToBlasRelationCommand(format::HandleId                     parent,
+                                                     const std::vector<format::HandleId>& children)
+    {}
+
     virtual void SetCurrentBlockIndex(uint64_t block_index) override { block_index_ = block_index; }
 
     void SetCurrentApiCallId(format::ApiCallId api_call_id) { current_api_call_id_ = api_call_id; }
