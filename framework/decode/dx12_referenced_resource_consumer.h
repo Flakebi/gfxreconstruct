@@ -87,6 +87,81 @@ class Dx12ReferencedResourceConsumer : public Dx12Consumer
                                               Decoded_GUID                                       riid,
                                               HandlePointerDecoder<void*>*                       ppvResource) override;
 
+    virtual void Process_ID3D12Device8_CreatePlacedResource1(
+        const ApiCallInfo&                                  call_info,
+        format::HandleId                                    object_id,
+        HRESULT                                             return_value,
+        format::HandleId                                    pHeap,
+        UINT64                                              HeapOffset,
+        StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC1>* pDesc,
+        D3D12_RESOURCE_STATES                               InitialState,
+        StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*    pOptimizedClearValue,
+        Decoded_GUID                                        riid,
+        HandlePointerDecoder<void*>*                        ppvResource) override;
+
+    virtual void Process_ID3D12Device10_CreatePlacedResource2(
+        const ApiCallInfo&                                  call_info,
+        format::HandleId                                    object_id,
+        HRESULT                                             return_value,
+        format::HandleId                                    pHeap,
+        UINT64                                              HeapOffset,
+        StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC1>* pDesc,
+        D3D12_BARRIER_LAYOUT                                InitialLayout,
+        StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*    pOptimizedClearValue,
+        UINT32                                              NumCastableFormats,
+        PointerDecoder<DXGI_FORMAT>*                        pCastableFormats,
+        Decoded_GUID                                        riid,
+        HandlePointerDecoder<void*>*                        ppvResource) override;
+
+    virtual void Process_ID3D12Device_CreateReservedResource(
+        const ApiCallInfo&                                 call_info,
+        format::HandleId                                   object_id,
+        HRESULT                                            return_value,
+        StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC>* pDesc,
+        D3D12_RESOURCE_STATES                              InitialState,
+        StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*   pOptimizedClearValue,
+        Decoded_GUID                                       riid,
+        HandlePointerDecoder<void*>*                       ppvResource) override;
+
+    virtual void Process_ID3D12Device4_CreateReservedResource1(
+        const ApiCallInfo&                                 call_info,
+        format::HandleId                                   object_id,
+        HRESULT                                            return_value,
+        StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC>* pDesc,
+        D3D12_RESOURCE_STATES                              InitialState,
+        StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*   pOptimizedClearValue,
+        format::HandleId                                   pProtectedSession,
+        Decoded_GUID                                       riid,
+        HandlePointerDecoder<void*>*                       ppvResource) override;
+
+    virtual void Process_ID3D12Device10_CreateReservedResource2(
+        const ApiCallInfo&                                 call_info,
+        format::HandleId                                   object_id,
+        HRESULT                                            return_value,
+        StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC>* pDesc,
+        D3D12_BARRIER_LAYOUT                               InitialLayout,
+        StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*   pOptimizedClearValue,
+        format::HandleId                                   pProtectedSession,
+        UINT32                                             NumCastableFormats,
+        PointerDecoder<DXGI_FORMAT>*                       pCastableFormats,
+        Decoded_GUID                                       riid,
+        HandlePointerDecoder<void*>*                       ppvResource) override;
+
+    virtual void Process_ID3D12Device10_CreateCommittedResource3(
+        const ApiCallInfo&                                   call_info,
+        format::HandleId                                     object_id,
+        HRESULT                                              return_value,
+        StructPointerDecoder<Decoded_D3D12_HEAP_PROPERTIES>* pHeapProperties,
+        D3D12_HEAP_FLAGS                                     HeapFlags,
+        StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC1>*  pDesc,
+        D3D12_BARRIER_LAYOUT                                 InitialLayout,
+        StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*     pOptimizedClearValue,
+        format::HandleId                                     pProtectedSession,
+        UINT32                                               NumCastableFormats,
+        PointerDecoder<DXGI_FORMAT>*                         pCastableFormats,
+        Decoded_GUID                                         riidResource,
+        HandlePointerDecoder<void*>*                         ppvResource) override;
+
     virtual void Process_ID3D12Device_CreateRootSignature(const ApiCallInfo&           call_info,
                                                           format::HandleId             object_id,
                                                           HRESULT                      return_value,

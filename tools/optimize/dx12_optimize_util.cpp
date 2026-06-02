@@ -155,6 +155,15 @@ bool GetUnreferencedObjectOptimizationInfo(const std::string&               inpu
             resource_consumer.GetReferencedResourceIds(nullptr, &info.unreferenced_resources);
             GFXRECON_WRITE_CONSOLE("Finished scanning capture file for unreferenced objects.");
 
+            // [DXR DEBUG] Diagnostic: dump the unreferenced resource set so we can identify which
+            // DXR-related buffer is being stripped by the resource-removal pass.
+            GFXRECON_WRITE_CONSOLE("[DXR DEBUG] unreferenced_resources count: %zu",
+                                   info.unreferenced_resources.size());
+            for (auto id : info.unreferenced_resources)
+            {
+                GFXRECON_WRITE_CONSOLE("[DXR DEBUG]   unreferenced resource id: %" PRIu64, id);
+            }
+
             ref_scan_result = true;
 
             if (BypassResourceValueOptimization(pso_consumer, options, info) == true)

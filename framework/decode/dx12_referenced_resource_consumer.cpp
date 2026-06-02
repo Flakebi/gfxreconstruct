@@ -24,6 +24,8 @@
 
 #include "decode/custom_dx12_struct_object_mappers.h"
 #include "generated/generated_dx12_struct_object_mappers.h"
+
+#include <cinttypes>
 GFXRECON_BEGIN_NAMESPACE(gfxrecon)
 GFXRECON_BEGIN_NAMESPACE(decode)
 
@@ -92,6 +94,129 @@ void Dx12ReferencedResourceConsumer::Process_ID3D12Device_CreatePlacedResource(
     HandlePointerDecoder<void*>*                       ppvResource)
 {
 
+    format::HandleId* handle_ptr = const_cast<gfxrecon::format::HandleId*>(ppvResource->GetPointer());
+    table_.AddResource(*handle_ptr);
+    if (pDesc->GetPointer()->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+    {
+        buffer_resource_infos_.insert({ *handle_ptr, { pDesc->GetPointer()->Width, kNullGpuAddress } });
+    }
+}
+
+void Dx12ReferencedResourceConsumer::Process_ID3D12Device8_CreatePlacedResource1(
+    const ApiCallInfo&                                  call_info,
+    format::HandleId                                    object_id,
+    HRESULT                                             return_value,
+    format::HandleId                                    pHeap,
+    UINT64                                              HeapOffset,
+    StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC1>* pDesc,
+    D3D12_RESOURCE_STATES                               InitialState,
+    StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*    pOptimizedClearValue,
+    Decoded_GUID                                        riid,
+    HandlePointerDecoder<void*>*                        ppvResource)
+{
+    format::HandleId* handle_ptr = const_cast<gfxrecon::format::HandleId*>(ppvResource->GetPointer());
+    table_.AddResource(*handle_ptr);
+    if (pDesc->GetPointer()->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+    {
+        buffer_resource_infos_.insert({ *handle_ptr, { pDesc->GetPointer()->Width, kNullGpuAddress } });
+    }
+}
+
+void Dx12ReferencedResourceConsumer::Process_ID3D12Device10_CreatePlacedResource2(
+    const ApiCallInfo&                                  call_info,
+    format::HandleId                                    object_id,
+    HRESULT                                             return_value,
+    format::HandleId                                    pHeap,
+    UINT64                                              HeapOffset,
+    StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC1>* pDesc,
+    D3D12_BARRIER_LAYOUT                                InitialLayout,
+    StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*    pOptimizedClearValue,
+    UINT32                                              NumCastableFormats,
+    PointerDecoder<DXGI_FORMAT>*                        pCastableFormats,
+    Decoded_GUID                                        riid,
+    HandlePointerDecoder<void*>*                        ppvResource)
+{
+    format::HandleId* handle_ptr = const_cast<gfxrecon::format::HandleId*>(ppvResource->GetPointer());
+    table_.AddResource(*handle_ptr);
+    if (pDesc->GetPointer()->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+    {
+        buffer_resource_infos_.insert({ *handle_ptr, { pDesc->GetPointer()->Width, kNullGpuAddress } });
+    }
+}
+
+void Dx12ReferencedResourceConsumer::Process_ID3D12Device_CreateReservedResource(
+    const ApiCallInfo&                                 call_info,
+    format::HandleId                                   object_id,
+    HRESULT                                            return_value,
+    StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC>* pDesc,
+    D3D12_RESOURCE_STATES                              InitialState,
+    StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*   pOptimizedClearValue,
+    Decoded_GUID                                       riid,
+    HandlePointerDecoder<void*>*                       ppvResource)
+{
+    format::HandleId* handle_ptr = const_cast<gfxrecon::format::HandleId*>(ppvResource->GetPointer());
+    table_.AddResource(*handle_ptr);
+    if (pDesc->GetPointer()->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+    {
+        buffer_resource_infos_.insert({ *handle_ptr, { pDesc->GetPointer()->Width, kNullGpuAddress } });
+    }
+}
+
+void Dx12ReferencedResourceConsumer::Process_ID3D12Device4_CreateReservedResource1(
+    const ApiCallInfo&                                 call_info,
+    format::HandleId                                   object_id,
+    HRESULT                                            return_value,
+    StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC>* pDesc,
+    D3D12_RESOURCE_STATES                              InitialState,
+    StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*   pOptimizedClearValue,
+    format::HandleId                                   pProtectedSession,
+    Decoded_GUID                                       riid,
+    HandlePointerDecoder<void*>*                       ppvResource)
+{
+    format::HandleId* handle_ptr = const_cast<gfxrecon::format::HandleId*>(ppvResource->GetPointer());
+    table_.AddResource(*handle_ptr);
+    if (pDesc->GetPointer()->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+    {
+        buffer_resource_infos_.insert({ *handle_ptr, { pDesc->GetPointer()->Width, kNullGpuAddress } });
+    }
+}
+
+void Dx12ReferencedResourceConsumer::Process_ID3D12Device10_CreateReservedResource2(
+    const ApiCallInfo&                                 call_info,
+    format::HandleId                                   object_id,
+    HRESULT                                            return_value,
+    StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC>* pDesc,
+    D3D12_BARRIER_LAYOUT                               InitialLayout,
+    StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*   pOptimizedClearValue,
+    format::HandleId                                   pProtectedSession,
+    UINT32                                             NumCastableFormats,
+    PointerDecoder<DXGI_FORMAT>*                       pCastableFormats,
+    Decoded_GUID                                       riid,
+    HandlePointerDecoder<void*>*                       ppvResource)
+{
+    format::HandleId* handle_ptr = const_cast<gfxrecon::format::HandleId*>(ppvResource->GetPointer());
+    table_.AddResource(*handle_ptr);
+    if (pDesc->GetPointer()->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+    {
+        buffer_resource_infos_.insert({ *handle_ptr, { pDesc->GetPointer()->Width, kNullGpuAddress } });
+    }
+}
+
+void Dx12ReferencedResourceConsumer::Process_ID3D12Device10_CreateCommittedResource3(
+    const ApiCallInfo&                                   call_info,
+    format::HandleId                                     object_id,
+    HRESULT                                              return_value,
+    StructPointerDecoder<Decoded_D3D12_HEAP_PROPERTIES>* pHeapProperties,
+    D3D12_HEAP_FLAGS                                     HeapFlags,
+    StructPointerDecoder<Decoded_D3D12_RESOURCE_DESC1>*  pDesc,
+    D3D12_BARRIER_LAYOUT                                 InitialLayout,
+    StructPointerDecoder<Decoded_D3D12_CLEAR_VALUE>*     pOptimizedClearValue,
+    format::HandleId                                     pProtectedSession,
+    UINT32                                               NumCastableFormats,
+    PointerDecoder<DXGI_FORMAT>*                         pCastableFormats,
+    Decoded_GUID                                         riidResource,
+    HandlePointerDecoder<void*>*                         ppvResource)
+{
     format::HandleId* handle_ptr = const_cast<gfxrecon::format::HandleId*>(ppvResource->GetPointer());
     table_.AddResource(*handle_ptr);
     if (pDesc->GetPointer()->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
@@ -243,10 +368,35 @@ void Dx12ReferencedResourceConsumer::Process_ID3D12Device_CreateShaderResourceVi
     Decoded_D3D12_CPU_DESCRIPTOR_HANDLE                            DestDescriptor)
 {
     auto desc_heap_info = descriptor_heap_infos_.find(DestDescriptor.heap_id);
-    if (desc_heap_info != descriptor_heap_infos_.end())
+    if (desc_heap_info == descriptor_heap_infos_.end())
     {
-        desc_heap_info->second.resources[DestDescriptor.index] = pResource;
+        return;
     }
+
+    format::HandleId slot_resource = pResource;
+
+    // A top-level acceleration structure SRV passes pResource = nullptr and stores the AS GPU VA in
+    // RaytracingAccelerationStructure.Location. Resolve that VA to the underlying buffer handle so the
+    // descriptor binding correctly marks the TLAS buffer as used.
+    if ((pResource == format::kNullHandleId) && (pDesc != nullptr) && !pDesc->IsNull())
+    {
+        const auto* raw = pDesc->GetPointer();
+        if ((raw != nullptr) &&
+            (raw->ViewDimension == D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE))
+        {
+            slot_resource = GetResourceIDForBufferLocation(raw->RaytracingAccelerationStructure.Location);
+            if (slot_resource == format::kNullHandleId)
+            {
+                GFXRECON_LOG_WARNING(
+                    "[DXR DEBUG] CreateShaderResourceView (RAYTRACING_ACCELERATION_STRUCTURE): "
+                    "Location VA 0x%" PRIx64 " did not resolve to a buffer id; the TLAS buffer may end up "
+                    "stripped because the descriptor binding cannot mark it as used.",
+                    static_cast<uint64_t>(raw->RaytracingAccelerationStructure.Location));
+            }
+        }
+    }
+
+    desc_heap_info->second.resources[DestDescriptor.index] = slot_resource;
 }
 
 void Dx12ReferencedResourceConsumer::Process_ID3D12Device_CreateUnorderedAccessView(
@@ -423,6 +573,19 @@ Dx12ReferencedResourceConsumer::GetResourceIDForBufferLocation(D3D12_GPU_VIRTUAL
 {
     for (const auto& [id, info] : buffer_resource_infos_)
     {
+        if (info.gpu_address == kNullGpuAddress)
+        {
+            // [DXR DEBUG] A buffer was registered (via CreateCommittedResource / CreatePlacedResource) but
+            // never had its GPU VA recorded via Process_ID3D12Resource_GetGPUVirtualAddress. With
+            // gpu_address == 0, the range check below would falsely match any small lookup VA, so we skip
+            // such entries. This often indicates a placed/reserved-resource VA-tracking gap that will cause
+            // DXR builds/dispatches to silently miss this buffer.
+            GFXRECON_LOG_WARNING_ONCE("[DXR DEBUG] Resource id %" PRIu64
+                                      " is registered without a GPU VA (GetGPUVirtualAddress was never "
+                                      "captured for it). DXR lookups into this buffer will silently fail.",
+                                      static_cast<uint64_t>(id));
+            continue;
+        }
         if (buffer_location >= info.gpu_address && buffer_location < (info.gpu_address + info.size))
         {
             return id;
@@ -938,7 +1101,7 @@ void Dx12ReferencedResourceConsumer::Process_ID3D12GraphicsCommandList4_BuildRay
     UINT                                                                                          NumPostbuildInfoDescs,
     StructPointerDecoder<Decoded_D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC>*    pPostbuildInfoDescs)
 {
-    auto mark = [&](D3D12_GPU_VIRTUAL_ADDRESS va) {
+    auto mark = [&](D3D12_GPU_VIRTUAL_ADDRESS va, const char* field) {
         if (va == 0)
         {
             return;
@@ -948,6 +1111,13 @@ void Dx12ReferencedResourceConsumer::Process_ID3D12GraphicsCommandList4_BuildRay
         {
             table_.AddResourceToUser(object_id, resource);
         }
+        else
+        {
+            GFXRECON_LOG_WARNING(
+                "[DXR DEBUG] BuildRaytracingAccelerationStructure: %s VA 0x%" PRIx64
+                " did not resolve to a buffer id; init data for that buffer may be stripped.",
+                field, static_cast<uint64_t>(va));
+        }
     };
 
     if (pDesc->IsNull())
@@ -956,27 +1126,27 @@ void Dx12ReferencedResourceConsumer::Process_ID3D12GraphicsCommandList4_BuildRay
     }
     const auto* build_desc = pDesc->GetPointer();
 
-    mark(build_desc->DestAccelerationStructureData);
-    mark(build_desc->SourceAccelerationStructureData);
-    mark(build_desc->ScratchAccelerationStructureData);
+    mark(build_desc->DestAccelerationStructureData, "DestAccelerationStructureData");
+    mark(build_desc->SourceAccelerationStructureData, "SourceAccelerationStructureData");
+    mark(build_desc->ScratchAccelerationStructureData, "ScratchAccelerationStructureData");
 
     const auto& inputs = build_desc->Inputs;
     if (inputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL)
     {
-        mark(inputs.InstanceDescs);
+        mark(inputs.InstanceDescs, "InstanceDescs");
     }
     else if (inputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL)
     {
         auto mark_geometry = [&](const D3D12_RAYTRACING_GEOMETRY_DESC& geom) {
             if (geom.Type == D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES)
             {
-                mark(geom.Triangles.Transform3x4);
-                mark(geom.Triangles.IndexBuffer);
-                mark(geom.Triangles.VertexBuffer.StartAddress);
+                mark(geom.Triangles.Transform3x4, "Triangles.Transform3x4");
+                mark(geom.Triangles.IndexBuffer, "Triangles.IndexBuffer");
+                mark(geom.Triangles.VertexBuffer.StartAddress, "Triangles.VertexBuffer.StartAddress");
             }
             else if (geom.Type == D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS)
             {
-                mark(geom.AABBs.AABBs.StartAddress);
+                mark(geom.AABBs.AABBs.StartAddress, "AABBs.AABBs.StartAddress");
             }
         };
 
@@ -1011,7 +1181,7 @@ void Dx12ReferencedResourceConsumer::Process_ID3D12GraphicsCommandList4_Dispatch
     }
     const auto* desc = pDesc->GetPointer();
 
-    auto mark = [&](D3D12_GPU_VIRTUAL_ADDRESS va) {
+    auto mark = [&](D3D12_GPU_VIRTUAL_ADDRESS va, const char* field) {
         if (va == 0)
         {
             return;
@@ -1021,12 +1191,18 @@ void Dx12ReferencedResourceConsumer::Process_ID3D12GraphicsCommandList4_Dispatch
         {
             table_.AddResourceToUser(object_id, resource);
         }
+        else
+        {
+            GFXRECON_LOG_WARNING("[DXR DEBUG] DispatchRays: %s VA 0x%" PRIx64
+                                 " did not resolve to a buffer id; init data for that SBT buffer may be stripped.",
+                                 field, static_cast<uint64_t>(va));
+        }
     };
 
-    mark(desc->RayGenerationShaderRecord.StartAddress);
-    mark(desc->MissShaderTable.StartAddress);
-    mark(desc->HitGroupTable.StartAddress);
-    mark(desc->CallableShaderTable.StartAddress);
+    mark(desc->RayGenerationShaderRecord.StartAddress, "RayGenerationShaderRecord");
+    mark(desc->MissShaderTable.StartAddress, "MissShaderTable");
+    mark(desc->HitGroupTable.StartAddress, "HitGroupTable");
+    mark(desc->CallableShaderTable.StartAddress, "CallableShaderTable");
 }
 
 void Dx12ReferencedResourceConsumer::ProcessSetTlasToBlasRelationCommand(format::HandleId                     parent,
