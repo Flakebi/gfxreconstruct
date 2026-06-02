@@ -169,6 +169,10 @@ int main(int argc, const char** argv)
             gfxrecon::decode::VulkanReplayOptions          vulkan_replay_options =
                 GetVulkanReplayOptions(arg_parser, filename, &tracked_object_info_table);
 
+#if defined(D3D12_SUPPORT)
+            gfxrecon::decode::DxReplayOptions dx_replay_options = GetDxReplayOptions(arg_parser, filename);
+#endif
+
             // --loop-frame on a single-dispatch capture needs VK_EXT_frame_boundary so we can emit
             // a per-iteration frame signal for profiling tools. Auto-enable the flag that drives
             // the device-creation request; the per-iteration emit is a no-op when the extension is
@@ -191,20 +195,30 @@ int main(int argc, const char** argv)
             bool        preload_measurement_frame_range    = false;
             std::string measurement_file_name;
 
-            if (vulkan_replay_options.enable_vulkan)
-            {
-                has_mfr = GetMeasurementFrameRange(arg_parser, measurement_start_frame, measurement_end_frame);
-                GetMeasurementFilename(arg_parser, measurement_file_name);
-                quit_after_measurement_frame_range = vulkan_replay_options.quit_after_measurement_frame_range;
-                flush_measurement_frame_range      = vulkan_replay_options.flush_measurement_frame_range;
-                flush_inside_measurement_range     = vulkan_replay_options.flush_inside_measurement_range;
-                preload_measurement_frame_range    = vulkan_replay_options.preload_measurement_range;
+            // Measurement-range setup is API-agnostic. The arg-parser helpers read directly from
+            // the command line, and the gating flags below live on the base ReplayOptions (set by
+            // GetReplayOptions for both Vulkan and D3D12). preload_measurement_range is the one
+            // Vulkan-only field; it stays a no-op for D3D12.
+            has_mfr = GetMeasurementFrameRange(arg_parser, measurement_start_frame, measurement_end_frame);
+            GetMeasurementFilename(arg_parser, measurement_file_name);
 
-                if (vulkan_replay_options.quit_after_frame)
-                {
-                    quit_after_frame = true;
-                    GetQuitAfterFrame(arg_parser, quit_frame);
-                }
+            const gfxrecon::decode::ReplayOptions& base_replay_options =
+#if defined(D3D12_SUPPORT)
+                (!vulkan_replay_options.enable_vulkan && dx_replay_options.enable_d3d12)
+                    ? static_cast<const gfxrecon::decode::ReplayOptions&>(dx_replay_options)
+                    :
+#endif
+                    static_cast<const gfxrecon::decode::ReplayOptions&>(vulkan_replay_options);
+
+            quit_after_measurement_frame_range = base_replay_options.quit_after_measurement_frame_range;
+            flush_measurement_frame_range      = base_replay_options.flush_measurement_frame_range;
+            flush_inside_measurement_range     = base_replay_options.flush_inside_measurement_range;
+            preload_measurement_frame_range    = vulkan_replay_options.preload_measurement_range;
+
+            if (base_replay_options.quit_after_frame)
+            {
+                quit_after_frame = true;
+                GetQuitAfterFrame(arg_parser, quit_frame);
             }
 
             gfxrecon::graphics::FpsInfo fps_info(static_cast<uint64_t>(measurement_start_frame),
@@ -259,7 +273,6 @@ int main(int argc, const char** argv)
             api_replay_consumer.vk_replay_consumer = vulkan_replay_consumer.get();
 
 #if defined(D3D12_SUPPORT)
-            gfxrecon::decode::DxReplayOptions    dx_replay_options = GetDxReplayOptions(arg_parser, filename);
             gfxrecon::decode::Dx12ReplayConsumer dx12_replay_consumer(application, dx_replay_options);
             gfxrecon::decode::Dx12Decoder        dx12_decoder;
 
