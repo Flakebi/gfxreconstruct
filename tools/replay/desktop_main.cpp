@@ -64,6 +64,8 @@
 #include "encode/vulkan_capture_manager.h"
 #include "recapture_vulkan_entry.h"
 
+#include <algorithm>
+#include <cinttypes>
 #include <exception>
 #include <memory>
 #include <stdexcept>
@@ -374,20 +376,30 @@ int main(int argc, const char** argv)
             application->SetFpsInfo(&fps_info);
             application->Run();
 
+            // Single-dispatch captures (no Present) never advance file_processor's frame counter,
+            // but if --loop-frame was active each iteration counts as a replayed frame for the
+            // purposes of end-of-replay reporting and measurement-range logging.
+            const uint64_t loop_last_frame = fl_info.IsLooping() && fl_info.GetIterationsCompleted() > 0
+                                                 ? static_cast<uint64_t>(fl_info.GetLoopFrameIdx()) +
+                                                       fl_info.GetIterationsCompleted() - 1
+                                                 : 0;
+            const uint64_t effective_last_frame =
+                std::max<uint64_t>(file_processor->GetCurrentFrameNumber(), loop_last_frame);
+
             // XXX if the final frame ended with a Present, this would be the *next* frame
             // Add one so that it matches the trim range frame number semantic
-            fps_info.EndFile(file_processor->GetCurrentFrameNumber() + 1);
+            fps_info.EndFile(effective_last_frame + 1);
 
-            if ((file_processor->GetCurrentFrameNumber() > 0) &&
+            if ((effective_last_frame > 0) &&
                 (file_processor->GetErrorState() == gfxrecon::decode::BlockIOError::kErrorNone))
             {
-                if (file_processor->GetCurrentFrameNumber() < measurement_start_frame)
+                if (effective_last_frame < measurement_start_frame)
                 {
                     GFXRECON_LOG_WARNING(
-                        "Measurement range start frame (%u) is greater than the last replayed frame (%u). "
+                        "Measurement range start frame (%u) is greater than the last replayed frame (%" PRIu64 "). "
                         "Measurements were never started, cannot calculate measurement range FPS.",
                         measurement_start_frame,
-                        file_processor->GetCurrentFrameNumber());
+                        effective_last_frame);
                 }
                 else
                 {
