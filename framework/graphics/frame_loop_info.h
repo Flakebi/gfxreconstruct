@@ -55,12 +55,15 @@ class FrameLoopInfo
 
     void     SetLooping(bool looping) { is_looping_ = looping; }
     uint32_t GetLoopIterations() const { return loop_iterations_; }
+    uint32_t GetLoopFrameIdx() const { return loop_frame_idx_; }
+    uint32_t GetIterationsCompleted() const { return iterations_completed_; }
 
     /// Decrements the number of loop iterations remaining.
     /// If the number of iterations is infinite, this has no effect.
     void DecrementLoopIterations()
     {
         is_repetition_ = true;
+        ++iterations_completed_;
         if (loop_iterations_ != INFINITE_ITERATIONS)
         {
             --loop_iterations_;
@@ -72,6 +75,7 @@ class FrameLoopInfo
     bool     is_repetition_{ false };
     uint32_t loop_frame_idx_{ 0 };
     uint32_t loop_iterations_{ INFINITE_ITERATIONS };
+    uint32_t iterations_completed_{ 0 };
 };
 
 GFXRECON_END_NAMESPACE(graphics)

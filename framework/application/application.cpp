@@ -148,6 +148,15 @@ void Application::Run()
                 frame_loop_info_->SetLooping(true);
             }
 
+            // While looping a single frame, the file processor's frame counter is frozen at the
+            // loop frame. Advance the frame number monotonically per loop iteration so that
+            // FpsInfo's measurement-frame-range logic (BeginFrame/EndFrame/ShouldQuit) can fire.
+            if ((frame_loop_info_ != nullptr) && (frame_loop_info_->IsLooping()))
+            {
+                frame_number =
+                    frame_loop_info_->GetLoopFrameIdx() + frame_loop_info_->GetIterationsCompleted();
+            }
+
             if (fps_info_ != nullptr)
             {
                 if (fps_info_->ShouldQuit(frame_number))
