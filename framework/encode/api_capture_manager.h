@@ -251,6 +251,7 @@ class ApiCaptureManager
     auto                   GetTrimBoundary() const { return common_manager_->GetTrimBoundary(); }
     auto                   GetTrimDrawCalls() const { return common_manager_->GetTrimDrawCalls(); }
     auto                   IsDispatchRaysOnly() const { return common_manager_->IsDispatchRaysOnly(); }
+    auto                   GetDispatchRaysIndex() const { return common_manager_->GetDispatchRaysIndex(); }
     bool                   GetUseAssetFile() const { return common_manager_->GetUseAssetFile(); }
     CommandWriter*         GetCommandWriter() { return common_manager_->GetCommandWriter(); }
     bool GetIgnoreFrameBoundaryAndroid() const { return common_manager_->GetIgnoreFrameBoundaryAndroid(); }

@@ -517,6 +517,10 @@ struct ID3D12CommandListInfo : public DxWrapperInfo
     // DrawInstanced, DrawIndexedInstanced, Dispatch, ExecuteIndirect, ExecuteBundle, DispatchRays
     uint32_t draw_call_count{ 0 };
 
+    // Number of DispatchRays recorded to this command list since the last reset. Used by
+    // GFXRECON_CAPTURE_DISPATCH_RAYS_ONLY to locate the n-th DispatchRays per command list.
+    uint32_t dispatch_rays_count{ 0 };
+
     // GFXRECON_CAPTURE_DRAW_CALLS
     std::array<graphics::dx12::CommandSet, 3>    split_command_sets;
     bool                                         is_split_commandlist{ false };

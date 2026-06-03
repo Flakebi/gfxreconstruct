@@ -3761,12 +3761,16 @@ D3D12CaptureManager::GetCommandListsForTrimDrawCalls(ID3D12CommandList_Wrapper* 
             break;
     };
 
-    // Hotkey-held DispatchRays capture: while the hotkey is down, claim the first
-    // DispatchRays of each command list as a capture target. The per-cmdlist
-    // is_dispatch_rays_target flag prevents marking more than one DispatchRays in the
-    // same recording cycle; it is cleared after capture in the ExecuteCommandLists path.
+    // Hotkey-held DispatchRays capture: while the hotkey is down, claim the n-th
+    // DispatchRays of each command list as a capture target, where n is the value of
+    // GFXRECON_CAPTURE_DISPATCH_RAYS_ONLY (1-based). dispatch_rays_count is incremented in
+    // TrackCommandExecution, which runs after this PreCall path, so it holds the number of
+    // DispatchRays recorded before the current one; matching (n - 1) selects the n-th. The
+    // per-cmdlist is_dispatch_rays_target flag prevents marking more than one DispatchRays in
+    // the same recording cycle; it is cleared after capture in the ExecuteCommandLists path.
     if (common_manager_->IsDispatchRaysOnly() &&
         api_call_id == format::ApiCall_ID3D12GraphicsCommandList4_DispatchRays &&
+        cmd_list_info->dispatch_rays_count == (common_manager_->GetDispatchRaysIndex() - 1) &&
         !cmd_list_info->is_dispatch_rays_target && !common_manager_->GetTrimKey().empty() &&
         common_manager_->GetKeyboard().GetKeyState(common_manager_->GetTrimKey()))
     {

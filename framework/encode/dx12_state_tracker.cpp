@@ -145,6 +145,7 @@ void Dx12StateTracker::TrackCommandExecution(ID3D12CommandList_Wrapper*      lis
             list_info->command_gpu_descriptor_handles.clear();
             list_info->command_gpu_virtual_addresses.clear();
             list_info->draw_call_count                = 0;
+            list_info->dispatch_rays_count            = 0;
             list_info->find_target_draw_call_count    = 0;
             list_info->target_bundle_commandlist_info = nullptr;
 
@@ -165,8 +166,11 @@ void Dx12StateTracker::TrackCommandExecution(ID3D12CommandList_Wrapper*      lis
         case format::ApiCallId::ApiCall_ID3D12GraphicsCommandList_Dispatch:
         case format::ApiCallId::ApiCall_ID3D12GraphicsCommandList_ExecuteIndirect:
         case format::ApiCallId::ApiCall_ID3D12GraphicsCommandList_ExecuteBundle:
+            ++list_info->draw_call_count;
+            break;
         case format::ApiCallId::ApiCall_ID3D12GraphicsCommandList4_DispatchRays:
             ++list_info->draw_call_count;
+            ++list_info->dispatch_rays_count;
             break;
         default:
             break;

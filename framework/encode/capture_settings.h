@@ -233,7 +233,8 @@ class CaptureSettings
         TrimDrawCalls                trim_draw_calls;
         std::string                  trim_key;
         uint32_t                     trim_key_frames{ 0 };
-        bool                         capture_dispatch_rays_only{ false };
+        // 0 = disabled; n = capture the n-th DispatchRays per command list (1-based).
+        uint32_t                     capture_dispatch_rays_only{ 0 };
         RuntimeTriggerState          runtime_capture_trigger{ kNotUsed };
         std::string                  capture_process_name{ "" };
         bool                         runtime_write_assets{ false };

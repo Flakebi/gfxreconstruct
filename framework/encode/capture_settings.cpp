@@ -499,8 +499,8 @@ void CaptureSettings::ProcessOptions(OptionsMap* options, CaptureSettings* setti
     }
 
     settings->trace_settings_.capture_dispatch_rays_only =
-        ParseBoolString(FindOption(options, kOptionKeyCaptureDispatchRaysOnly),
-                        settings->trace_settings_.capture_dispatch_rays_only);
+        gfxrecon::util::ParseUintString(FindOption(options, kOptionKeyCaptureDispatchRaysOnly),
+                                        settings->trace_settings_.capture_dispatch_rays_only);
     if (settings->trace_settings_.capture_dispatch_rays_only)
     {
         // Reuses the kDrawCalls split-command-list machinery; the hotkey arms a one-shot capture

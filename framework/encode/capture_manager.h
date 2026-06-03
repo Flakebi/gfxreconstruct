@@ -458,6 +458,12 @@ class CommonCaptureManager
     }
     bool IsDispatchRaysOnly() const
     {
+        return dispatch_rays_only_ != 0;
+    }
+    // 1-based index of the DispatchRays to capture per command list. Only meaningful when
+    // IsDispatchRaysOnly() is true.
+    uint32_t GetDispatchRaysIndex() const
+    {
         return dispatch_rays_only_;
     }
     auto GetQueueSubmitCount() const
@@ -629,7 +635,7 @@ class CommonCaptureManager
     std::string                             trim_key_;
     uint32_t                                trim_key_frames_;
     uint32_t                                trim_key_first_frame_;
-    bool                                    dispatch_rays_only_{ false };
+    uint32_t                                dispatch_rays_only_{ 0 };
     size_t                                  trim_current_range_;
     uint32_t                                current_frame_;
     uint32_t                                queue_submit_count_;

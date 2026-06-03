@@ -591,7 +591,7 @@ bool CommonCaptureManager::Initialize(format::ApiFamilyId                   api_
                 // DispatchRays is recorded.
                 if (trace_settings.capture_dispatch_rays_only)
                 {
-                    dispatch_rays_only_ = true;
+                    dispatch_rays_only_ = trace_settings.capture_dispatch_rays_only;
                     trim_key_           = trace_settings.trim_key;
                 }
             }
